@@ -12,7 +12,7 @@ canvas{position:fixed;left:0;top:0;display:block;touch-action:none;-webkit-tap-h
 'use strict';
 // Kelly's Giraffe Adventure — Kelly's FIRST giraffe game (the tan giraffe with brown patches). Free, no lock.
 const FORCE_UNLOCKED = true; // Peter 10/28: free until further notice. Set to false to restore the lock.
-const VERSION='1.0.0';
+const VERSION='1.0.1';
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const buf=document.createElement('canvas'),b=buf.getContext('2d');
 const TS=16,ROWS=15,LPX=ROWS*TS;
@@ -310,12 +310,12 @@ function headOff(){const p=P;
  if(p.duck)return[10,-8];
  if(p.tongue&&p.tongue.dy<0)return[p.tongue.dx?8:5,-24];
  return[7,-22]}
-function hurt(knock=true){const p=P;if(p.inv>0||p.st==='ram'||p.st==='dead'||state!=='play')return;
+function hurt(knock=true,fx){const p=P;if(p.inv>0||p.st==='ram'||p.st==='dead'||state!=='play')return;
  G.hp--;p.inv=100;p.tongue=null;p.swing=null;p.ledge=null;if(p.st!=='n'){p.st='n';setH(24)}
- if(knock){p.vx=-p.face*2.2;p.vy=-4}AU.sfx('hurt');shake=6;if(G.hp<=0)die()}
+ if(knock){p.vx=(fx==null?-p.face:(p.x+p.w/2<fx?-1:1))*2.2;p.vy=-4}/* knocked AWAY from whatever hit you */AU.sfx('hurt');shake=6;if(G.hp<=0)die()}
 function die(){const p=P;p.st='dead';p.vy=-6;p.vx=0;p.dt=0;p.tongue=null;AU.music(false);AU.sfx('die')}
 function afterDeath(){G.lives--;if(G.lives<0){state='over';stateT=0;return}
- G.hp=3;const p=P;Object.assign(p,{x:LV.cp.x,y:LV.cp.y,vx:0,vy:0,st:'n',inv:100,h:24,ram:null,swing:null,ledge:null,tongue:null,airRam:true,dt:0});p.safe={x:LV.cp.x,y:LV.cp.y};
+ G.hp=3;const p=P;Object.assign(p,{x:LV.cp.x,y:LV.cp.y,vx:0,vy:0,st:'n',inv:100,h:24,ram:null,swing:null,ledge:null,tongue:null,airRam:true,dt:0});p.safe={x:LV.cp.x,y:LV.cp.y};for(const e of LV.enemies)if(e.alive&&Math.abs(e.x+e.w/2-(p.x+p.w/2))<96){calmAway(e);if(!EDEF[e.type].spiky&&!EDEF[e.type].fly)e.stun=150}
  if(LV.boss&&LV.boss.hp>0){Object.assign(LV.boss,{x:22*TS,y:12*TS-30,vx:0,vy:0,st:'idle',t:0})}LV.rocks=[];AU.music(true,LEVELS[G.lvl].theme)}
 function fallOut(){const p=P;if(p.st==='dead')return;G.hp--;AU.sfx('splash');burst(p.x+6,Math.min(p.y,LPX-10),'#9be7ff',10,2.5);
  if(G.hp<=0){p.st='dead';p.dt=40;p.vy=0;p.y=LPX+60;AU.music(false);AU.sfx('die');return}
@@ -352,7 +352,8 @@ function updTongue(){const p=P,t=p.tongue;if(!t)return;if(p.st!=='n'){p.tongue=n
   const tcx=Math.floor(tx/TS),tcy=Math.floor(ty/TS);
   if(SOLID.has(T(tcx,tcy))){t.out=false;if(T(tcx,tcy)==='?')bonkQ(tcx,tcy)}
   else{for(const it of LV.items)if(it.alive&&Math.abs(it.x-tx)<10&&Math.abs(it.y-ty)<10){t.held=it;it.alive=false;t.out=false;break}
-   if(!t.held)for(const e of LV.enemies){if(!e.alive||!e.active)continue;if(tx>e.x-5&&tx<e.x+e.w+5&&ty>e.y-5&&ty<e.y+e.h+5){
+   if(!t.held)for(const e of LV.enemies){if(!e.alive||!e.active)continue;if(tx>e.x-5&&tx<e.x+e.w+5&&ty>e.y-16&&ty<e.y+e.h+5){// -16: a standing lick reaches bugs/hyenas on the ground
+
      if(EDEF[e.type].eat){t.held={t:'e',e};e.alive=false}else{e.stun=110;AU.sfx('bonk');LV.pops.push({x:e.x+e.w/2,y:e.y-4,txt:'DIZZY!',life:40,col:'#bde'})}t.out=false;break}}
    if(!t.held&&LV.boss&&LV.boss.hp>0&&ov({x:tx-2,y:ty-2,w:4,h:4},LV.boss)){t.out=false;LV.pops.push({x:tx,y:ty-6,txt:'BLEH!',life:40,col:'#fdd'})}}}
  else{t.len-=11;if(t.len<=0){if(t.held)eatItem(t.held,mx,my-6);p.tongue=null;p.tcd=6}}}
@@ -423,7 +424,7 @@ function killEnemy(e,how){e.alive=false;const d=EDEF[e.type];addScore(d.pts,e.x+
 function updEnemies(){const p=P;
  for(const e of LV.enemies){if(!e.alive)continue;const d=EDEF[e.type];
   if(!e.active){if(e.x<cam.x+BW+48&&e.x+e.w>cam.x-48)e.active=true;else continue}
-  e.t++;
+  e.t++;if(e.calm>0)e.calm--;
   if(e.stun>0){e.stun--;if(!d.fly){e.vy=Math.min(e.vy+0.35,6);const hy=moveY(e,e.vy);if(hy.length)e.vy=0}}
   else if(e.type==='e'){e.x=e.ox+Math.sin(e.t*0.03)*28;e.y=e.oy+Math.sin(e.t*0.09)*6;e.face=Math.cos(e.t*0.03)>0?1:-1}
   else if(e.type==='v'){
@@ -432,7 +433,7 @@ function updEnemies(){const p=P;
    else if(e.st==='swoop'){e.x+=e.vx;e.y+=e.vy;e.vy-=0.035;if(e.vy<-1.2||solidAt(e.x+e.w/2,e.y+e.h+2)){e.st='back';e.t=0}}
    else{e.x+=(e.ox-e.x)*0.03;e.y+=(e.oy-e.y)*0.04;if(Math.abs(e.y-e.oy)<2){e.st='idle';e.t=0}}}
   else{e.vy=Math.min(e.vy+0.35,6);
-   if(e.type==='y'&&e.ground){const dx=(p.x)-(e.x);if(Math.abs(dx)<120&&Math.sign(dx)!==Math.sign(e.vx)&&e.t%90===0)e.vx=-e.vx;if(Math.random()<0.006)e.vy=-4.6}
+   if(e.type==='y'&&e.ground){const dx=(p.x)-(e.x);if(Math.abs(dx)<120&&Math.sign(dx)!==Math.sign(e.vx)&&e.t%90===0&&!(e.calm>0))e.vx=-e.vx;if(Math.random()<0.006)e.vy=-4.6}
    const hx=moveX(e,e.vx);if(hx.length)e.vx=-e.vx;
    if(d.edge&&e.ground){const ax=e.vx>0?e.x+e.w+1:e.x-1,ty=e.y+e.h+3;if(!solidAt(ax,ty)&&T(Math.floor(ax/TS),Math.floor(ty/TS))!=='-')e.vx=-e.vx}
    const hy=moveY(e,e.vy);e.ground=false;if(hy.length&&e.vy>0){e.vy=0;e.ground=true}
@@ -442,7 +443,8 @@ function updEnemies(){const p=P;
   if(p.st==='ram'){killEnemy(e,'ram');continue}
   if(!d.spiky&&p.vy>0.3&&p.y+p.h-p.vy<=e.y+7){killEnemy(e,'stomp');p.vy=IN.J?-7.4:-5;p.airRam=true;continue}
   if(e.stun>0&&!d.spiky)continue;
-  hurt()}}
+  hurt(true,e.x+e.w/2);calmAway(e)}}
+function calmAway(e){const d=EDEF[e.type];if(d.fly)return;e.vx=(e.x+e.w/2<P.x+P.w/2?-1:1)*(d.spd||0);e.calm=150}// no pinning / checkpoint camping
 
 // ===== boss: Rhino Rumble =====
 function updBoss(){const B=LV.boss,p=P;if(!B)return;B.t++;if(B.flash>0)B.flash--;
@@ -469,10 +471,10 @@ function updBoss(){const B=LV.boss,p=P;if(!B)return;B.t++;if(B.flash>0)B.flash--
    if(B.hp===3){LV.items.push({t:'L',x:5.5*TS,y:7*TS,alive:true},{t:'L',x:23.5*TS,y:7*TS,alive:true});LV.pops.push({x:B.x+20,y:B.y-20,txt:'RHINO IS MAD!',life:80,col:'#ff8a5a'})}
    if(B.hp<=0){B.st='dead';B.t=0;B.vy=-5;addScore(5000,B.x+B.w/2,B.y-14,'+5000','#ffd34a');LV.rocks=[]}}
   else if(p.st==='ram'){p.st='n';p.ram=null;p.ramCD=14;p.vx=(p.x<B.x+B.w/2?-1:1)*3;p.vy=-3.5;p.inv=Math.max(p.inv,24);AU.sfx('bonk');LV.pops.push({x:B.x+B.w/2,y:B.y-8,txt:'TOO TOUGH! WAIT TILL IT\'S DIZZY',life:70,col:'#fff'})}
-  else if(!stunned)hurt();}
+  else if(!stunned)hurt(true,B.x+B.w/2);}
  for(const r of LV.rocks){if(r.warn>0){r.warn--;continue}r.vy=Math.min(r.vy+0.3,6);r.y+=r.vy;
   if(solidAt(r.x+6,r.y+12)){r.dead=true;burst(r.x+6,r.y+10,'#9b8a7a',6,2)}
-  else if(ov(p,r)){if(p.st==='ram'){addScore(50,r.x,r.y);r.dead=true;burst(r.x+6,r.y+6,'#9b8a7a',6,2)}else{hurt();r.dead=true}}}
+  else if(ov(p,r)){if(p.st==='ram'){addScore(50,r.x,r.y);r.dead=true;burst(r.x+6,r.y+6,'#9b8a7a',6,2)}else{hurt(true,r.x+6);r.dead=true}}}
  LV.rocks=LV.rocks.filter(r=>!r.dead)}
 
 function levelClear(){if(state!=='play')return;const p=P;p.st='win';p.vx=0;p.tongue=null;state='clear';stateT=0;AU.music(false);AU.sfx('clear');
@@ -623,7 +625,7 @@ function drawControls(){
  for(const k of ['A','B']){const c=CTL[k],on=k==='A'?act.J:act.A;ctx.beginPath();ctx.arc(c.x,c.y+3,c.r,0,7);ctx.fillStyle='rgba(0,0,0,.45)';ctx.fill();
   ctx.beginPath();ctx.arc(c.x,c.y+(on?2:0),c.r,0,7);ctx.fillStyle=k==='A'?(on?'#ff7a6a':'#d8392b'):(on?'#7ab0ff':'#2f62c8');ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='rgba(255,255,255,.75)';ctx.stroke();
   txt(c.lbl,c.x,c.y+(on?2:0),c.r*(k==='A'?0.42:0.34),'#fff')}
- if(portrait)txt('double-tap = NECK RAM',CTL.B.x,Math.min(H-SAFE.b-8,CTL.B.y+CTL.B.r+14),12,'#f4c060');
+ if(portrait)txt('double-tap = NECK RAM',CTL.B.x,Math.min(H-SAFE.b-8,CTL.B.y+CTL.B.r+14),14,'#f4c060');
  ctx.globalAlpha=1}
 function drawIntro(){const L=LEVELS[G.lvl],ga=gameArea();ctx.fillStyle='rgba(20,10,5,.55)';ctx.fillRect(0,0,W,ga);
  txt(L.boss?'BOSS!':'LEVEL '+(G.lvl+1),W/2,ga*0.36,28,'#f4c060');txt(L.name,W/2,ga*0.36+40,Math.min(34,W/11),'#fff');
@@ -646,8 +648,14 @@ function drawTitle(){const t=frame;
  if(save.reached>0){button(bx,by,bw,bh*0.9,'LEVELS','#3a5bd9',()=>{AU.sfx('sel');state='levels'});by+=bh*0.9+12}
  button(bx,by,bw,bh*0.9,'HOW TO PLAY','#7a3aa8',()=>{AU.sfx('sel');howPage=0;prevState='title';state='how'});by+=bh*0.9+12;
  if(save.best)txt('Best score: '+save.best,W/2,by+10,14,'#fff');
- iconBtn(CTL.mute,'mute');menuBtns.push({...CTL.mute,fn:toggleMute})}
+ iconBtn(CTL.mute,'mute');menuBtns.push({...CTL.mute,fn:toggleMute});drawInstall()}
 const title={cover:false};
+let bip=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();bip=e});addEventListener('appinstalled',()=>{bip=null});
+const IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function standalone(){try{return navigator.standalone===true||matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches}catch(e){return false}}
+function drawInstall(){if(state!=='title'||standalone())return;
+ if(bip)button(SAFE.l+8,SAFE.t+8,128,46,'📲 INSTALL','#d9822b',()=>{const e=bip;bip=null;try{e.prompt()}catch(err){}},16);
+ else if(IOS){let ls=wrap('📲 To install: tap Share ⬆ then “Add to Home Screen”',W-40,15);if(ls.length>1)ls=['📲 To install on iPhone:','tap Share ⬆ then “Add to Home Screen”'];ls.forEach((l,i)=>txt(l,W/2,H-SAFE.b-16-(ls.length-1-i)*20,15,'#fff'))}}
 function drawHow(){const w=Math.min(W-24,460),h=Math.min(H-SAFE.t-SAFE.b-24,400),pnl=panel(w,h),pg=HOW[howPage];
  txt(pg[0],W/2,pnl.y+30,22,'#f4c060');let y=pnl.y+64;for(let i=1;i<pg.length;i++){const lines=wrap(pg[i],w-36,15);for(const l of lines){txt(l,W/2,y,15,'#fff','center',false);y+=20}y+=10}
  txt((howPage+1)+' / '+HOW.length,W/2,pnl.y+h-84,13,'#ccb');
@@ -681,7 +689,7 @@ function render(){menuBtns=[];ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEn
  ctx.setTransform(DPR,0,0,DPR,0,0);
  if(title.cover){txt("Kelly's Giraffe Adventure",W/2,H*0.13,Math.min(44,W/14),'#ffd34a');return}
  if(state==='play'||state==='pause'||state==='intro'||state==='clear'||state==='over'||state==='win'||state==='how'){drawHUD();drawControls()}
- if(state==='intro')drawIntro();else if(state==='pause')drawPause();else if(state==='how'){drawPause();menuBtns=[];drawHow()}else if(state==='clear')drawClear();else if(state==='over')drawOver();else if(state==='win')drawWin();
+ if(state==='intro')drawIntro();else if(state==='pause')drawPause();else if(state==='how'){ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,H);drawHow()}else if(state==='clear')drawClear();else if(state==='over')drawOver();else if(state==='win')drawWin();
  if(state==='play'){menuBtns=[]}}
 
 // ===== main loop =====
