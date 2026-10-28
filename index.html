@@ -609,8 +609,8 @@ function drawHUD(){const x0=SAFE.l+10,y0=SAFE.t+10;
  for(let i=0;i<3;i++){ctx.font='bold 20px '+FONT;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=i<G.hp?'#ff4f6e':'rgba(255,255,255,.25)';ctx.fillText('♥',x0+i*20,y0+10)}
  ctx.save();ctx.translate(x0+70,y0+10);ctx.scale(1.6,1.6);gemShape(ctx,0,0,1);ctx.restore();
  txt('×'+G.gems,x0+82,y0+11,17,'#c8ffd0','left');txt('🦒×'+Math.max(0,G.lives),x0+140,y0+11,16,'#fff','left');
- txt('SCORE '+G.score,x0,y0+32,14,'#ffe9a8','left');txt((G.lvl+1)+'. '+LEVELS[G.lvl].name,x0+110,y0+32,13,'#fff','left');
- if(LV.boss&&LV.boss.st!=='intro'&&LV.boss.hp>0){const w=Math.min(220,W*0.5),x=(W-w)/2,y=y0+56;rrect(x-2,y-2,w+4,16,6,'rgba(0,0,0,.6)');rrect(x,y,w*LV.boss.hp/LV.boss.max,12,5,'#e8402a');txt('RHINO RUMBLE',W/2,y+26,14,'#ffd0b0')}
+ txt('SCORE '+G.score,x0,y0+32,14,'#ffe9a8','left');txt((LEVELS[G.lvl].bonus?'★B'+LEVELS[G.lvl].bonus:(G.lvl+1))+'. '+LEVELS[G.lvl].name,x0+110,y0+32,13,'#fff','left');
+ if(LV.boss&&LV.boss.st!=='intro'&&LV.boss.st!=='wait'&&LV.boss.hp>0){const w=Math.min(220,W*0.5),x=(W-w)/2,y=y0+56;rrect(x-2,y-2,w+4,16,6,'rgba(0,0,0,.6)');rrect(x,y,w*LV.boss.hp/LV.boss.max,12,5,'#e8402a');txt(LV.boss.name||'RHINO RUMBLE',W/2,y+26,14,'#ffd0b0')}
  iconBtn(CTL.pause,'pause');iconBtn(CTL.mute,'mute');
  // sign text
  const p=P;for(const s of LV.signs)if(Math.abs(s.x+8-(p.x+p.w/2))<26&&Math.abs(s.y-p.y)<40){const w=Math.min(W-24,440),lines=wrap(s.text,w-28,16),h=lines.length*21+20,x=(W-w)/2,y=SAFE.t+64;
@@ -707,4 +707,4 @@ window.__kga={get state(){return state},get btns(){return menuBtns.map(m=>({x:m.
  icon(size){const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');const s=document.createElement('canvas');s.width=s.height=48;const q=s.getContext('2d');
   const gr=q.createLinearGradient(0,0,0,48);gr.addColorStop(0,'#6cc8ff');gr.addColorStop(1,'#ffe8ae');q.fillStyle=gr;q.fillRect(0,0,48,48);q.fillStyle='#5cbf3a';q.fillRect(0,40,48,8);
   gemShape(q,39,12,1.3);drawGiraffe(q,20,41,1,{hx:9,hy:-27,walk:0});g.imageSmoothingEnabled=false;g.drawImage(s,0,0,size,size);return c.toDataURL('image/png')}};
-</script></body></html>
+</script><script src="bonus.js"></script></body></html>
