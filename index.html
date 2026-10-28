@@ -283,8 +283,12 @@ function loadLevel(i){
  LV.start={x:sx,y:sy};LV.cp={x:sx,y:sy};
  P={x:sx,y:sy,w:12,h:24,vx:0,vy:0,face:1,ground:false,coyote:0,jbuf:0,st:'n',t:0,inv:0,airRam:true,duck:false,tongue:null,ram:null,swing:null,ledge:null,lastAct:-99,ramCD:0,tcd:0,walk:0,dt:0,safe:{x:sx,y:sy},safeT:0,drop:false};
  if(def.boss){LV.boss={x:22*TS,y:12*TS-30,w:40,h:30,vx:0,vy:0,hp:6,max:6,st:'intro',t:0,face:-1,flash:0,ground:false};LV.goal=null}
- cam.x=clamp(P.x-BW*0.4,0,Math.max(0,LV.w*TS-BW));
+ cam.x=camTargetX();
 }
+// landscape: the translucent d-pad / JUMP+ACTION sit over the world, so let the camera show a stone wall past each level edge
+// (the level edge is already solid) to keep the giraffe, spawn and goal clear of the touch controls.
+function camPad(){if(portrait)return[0,0];return[(CTL.dpad.x+CTL.dpad.r*1.15)/S,(W-(CTL.B.x-CTL.B.r*1.15))/S]}
+function camTargetX(){const pd=camPad(),lo=-pd[0],hi=LV.w*TS-BW+pd[1];if(hi<=lo)return(lo+hi)/2;return clamp(P.x+P.w/2-BW*0.42+P.face*12,lo,hi)}
 function startLevel(i){G.lvl=i;G.hp=3;G.startScore=G.score;loadLevel(i);state='intro';stateT=0;AU.music(false)}
 function newGame(i){G={score:0,lives:3,gems:0,lvl:i,hp:3,startScore:0};startLevel(i)}
 function beginPlay(){state='play';AU.music(true,LEVELS[G.lvl].theme)}
@@ -489,8 +493,7 @@ function update(){frame++;stateT++;
  for(const q of LV.pops){q.y-=0.5;q.life--}LV.pops=LV.pops.filter(q=>q.life>0);
  if(shake>0)shake--;
  // camera
- const tx=clamp(P.x+P.w/2-BW*0.42+P.face*12,0,Math.max(0,LV.w*TS-BW));cam.x+=(tx-cam.x)*0.12;
- if(LV.w*TS<=BW)cam.x=(LV.w*TS-BW)/2;
+ cam.x+=(camTargetX()-cam.x)*0.12;
  if(BH>=LPX)cam.y=LPX-BH;else{const ty=clamp(P.y+P.h/2-BH*0.55,0,LPX-BH);cam.y+=(ty-cam.y)*0.15}}
 
 // ===== art =====
@@ -571,8 +574,8 @@ function drawBoss(B){const x=Math.round(B.x-cam.x),y=Math.round(B.y-cam.y),f=B.f
 function drawWorld(){const th=LEVELS[LV.i].theme,sx=(shake?rnd(-shake,shake)*0.5:0)|0,sy=(shake?rnd(-shake,shake)*0.5:0)|0;
  const cx=Math.round(cam.x)+sx,cy=Math.round(cam.y)+sy;const ox=cam.x,oy=cam.y;cam.x=cx;cam.y=cy;
  drawBG(th,cx,cy);
- const c0=Math.max(0,Math.floor(cx/TS)),c1=Math.min(LV.w-1,Math.floor((cx+BW)/TS));
- for(let r=Math.max(0,Math.floor(cy/TS));r<ROWS;r++)for(let c=c0;c<=c1;c++){const t=LV.g[r][c];if(t!=='.')drawTile(t,c*TS-cx,r*TS-cy,c,r,th)}
+ const c0=Math.floor(cx/TS),c1=Math.floor((cx+BW)/TS);
+ for(let r=Math.max(0,Math.floor(cy/TS));r<ROWS;r++)for(let c=c0;c<=c1;c++){const t=T(c,r);if(t!=='.')drawTile(t,c*TS-cx,r*TS-cy,c,r,th)}
  if(LPX-cy<BH){b.fillStyle='rgba(0,0,0,.35)';b.fillRect(0,LPX-cy,BW,BH)}
  for(const h of LV.hooks){const x=h.x-cx,y=h.y-cy;b.fillStyle='#6b4423';b.fillRect(x-1,y-12,2,7);b.fillRect(x-6,y-13,12,2);b.strokeStyle='#ffd23a';b.lineWidth=2;b.beginPath();b.arc(x,y,4,0,7);b.stroke();b.fillStyle='#fff6b0';b.fillRect(x-3,y-4,2,1)}
  for(const s of LV.signs){const x=s.x-cx,y=s.y-cy;b.fillStyle='#6b4423';b.fillRect(x+7,y+6,2,10);b.fillStyle='#c48a4a';b.fillRect(x+1,y,14,9);b.fillStyle='#8a5a2a';b.fillRect(x+1,y+8,14,1);b.fillStyle='#3a2210';b.fillRect(x+4,y+2,8,1);b.fillRect(x+4,y+5,6,1)}
