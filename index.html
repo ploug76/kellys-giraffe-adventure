@@ -51,20 +51,17 @@ addEventListener('load',()=>{layout();setTimeout(layout,100);setTimeout(layout,5
 addEventListener('pageshow',()=>{layout()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(state==='play')pauseGame();AU.suspend()}else{layout();AU.resume()}});
 
-// ===== controls (NES style: D-pad left, JUMP + ACTION right) =====
-const CTL={dpad:{x:0,y:0,r:0},A:{x:0,y:0,r:0,lbl:'JUMP'},B:{x:0,y:0,r:0,lbl:'ACTION'},mute:{x:0,y:0,w:44,h:44},pause:{x:0,y:0,w:44,h:44}};
+// ===== controls (swipe anywhere to move, JUMP + ACTION right; no on-screen d-pad) =====
+const CTL={A:{x:0,y:0,r:0,lbl:'JUMP'},B:{x:0,y:0,r:0,lbl:'ACTION'},mute:{x:0,y:0,w:44,h:44},pause:{x:0,y:0,w:44,h:44}};
 function layoutCtl(){
  const top=SAFE.t+8,rgt=W-SAFE.r-8;
  CTL.pause={x:rgt-46,y:top,w:46,h:46};CTL.mute={x:rgt-100,y:top,w:46,h:46};
  if(portrait){
-  const cy=gameH+(ctlH-SAFE.b)/2+2;const r=clamp(Math.min(W*0.19,(ctlH-SAFE.b)*0.4),56,84);
-  CTL.dpad={x:SAFE.l+14+r,y:cy,r};
+  const cy=gameH+(ctlH-SAFE.b)/2+2;
   const br=clamp(W*0.105,36,46);
   CTL.A={x:W-SAFE.r-14-br,y:cy-br*0.5,r:br,lbl:'JUMP'};
   CTL.B={x:W-SAFE.r-14-br*3.3,y:cy+br*0.45,r:br,lbl:'ACTION'};
  }else{
-  const r=clamp(H*0.17,50,78);const cy=H-SAFE.b-r-12;
-  CTL.dpad={x:SAFE.l+16+r,y:cy,r};
   const br=clamp(H*0.11,34,46);
   const by=H-SAFE.b-br-12;
   CTL.A={x:W-SAFE.r-16-br,y:by-br*0.8,r:br,lbl:'JUMP'};
@@ -80,14 +77,15 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowleft','arro
  if(k==='enter')menuKey()});
 addEventListener('keyup',e=>{KEY[e.key.toLowerCase()]=0});
 addEventListener('blur',()=>{for(const k in KEY)KEY[k]=0;TOUCH.clear()});
-function zoneAt(x,y){
- const d=CTL.dpad,dx=x-d.x,dy=y-d.y,dist=Math.hypot(dx,dy),out={};
- const inPad=portrait?(x<W*0.5&&y>gameH-6):(dist<d.r*1.5);
- if(inPad){if(dist>d.r*0.22){const a=Math.atan2(dy,dx),s=Math.round(a/(Math.PI/4));
-   if(s===0||s===1||s===-1)out.R=1;if(s===4||s===-4||s===3||s===-3)out.L=1;if(s===2||s===1||s===3)out.D=1;if(s===-2||s===-1||s===-3)out.U=1}
-  return out}
+// touch: JUMP/ACTION on the right; everywhere else is swipe-to-move.
+// Swipe and hold: the giraffe moves in the swipe direction while the finger stays down, stops on release.
+function zoneAt(x,y){const out={};
  const A=CTL.A,B=CTL.B,da=Math.hypot(x-A.x,y-A.y),db=Math.hypot(x-B.x,y-B.y);
  if(portrait?(x>=W*0.5&&y>gameH-6):(Math.min(da,db)<A.r*1.7)){if(da<db)out.J=1;else out.A=1}
+ return out}
+const SWIPE_MIN=14;
+function swipeDir(dx,dy){const out={};if(Math.hypot(dx,dy)<SWIPE_MIN)return out;const a=Math.atan2(dy,dx),s=Math.round(a/(Math.PI/4));
+ if(s===0||s===1||s===-1)out.R=1;if(s===4||s===-4||s===3||s===-3)out.L=1;if(s===2||s===1||s===3)out.D=1;if(s===-2||s===-1||s===-3)out.U=1;
  return out}
 function inBtn(r,x,y,p=4){return x>=r.x-p&&x<=r.x+r.w+p&&y>=r.y-p&&y<=r.y+r.h+p}
 let tapStart=null;
@@ -95,10 +93,10 @@ function onDown(id,x,y){AU.unlock();
  if(state==='play'){
   if(inBtn(CTL.pause,x,y)){pauseGame();return}
   if(inBtn(CTL.mute,x,y)){toggleMute();return}
-  const z=zoneAt(x,y);TOUCH.set(id,{x,y,z});return}
+  const z=zoneAt(x,y);if(Object.keys(z).length)TOUCH.set(id,{x,y,z});else TOUCH.set(id,{x,y,ox:x,oy:y,sw:1,z:{}});return}
  if(state==='intro'){stateT=999;return}
  tapStart={x,y,id}}
-function onMove(id,x,y){const t=TOUCH.get(id);if(t){t.x=x;t.y=y;t.z=zoneAt(x,y)}}
+function onMove(id,x,y){const t=TOUCH.get(id);if(t){t.x=x;t.y=y;t.z=t.sw?swipeDir(x-t.ox,y-t.oy):zoneAt(x,y)}}
 function onUp(id,x,y){AU.unlock();if(TOUCH.has(id)){TOUCH.delete(id);return}
  if(tapStart&&tapStart.id===id){const bt=hitMenu(x,y);if(bt)bt.fn();tapStart=null}}
 cv.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches)onDown(t.identifier,t.clientX,t.clientY)},{passive:false});
@@ -174,20 +172,20 @@ class Builder{constructor(w){this.w=w;this.g=[...Array(ROWS)].map(()=>Array(w).f
 const LEVELS=[
 {name:'Sunny Savanna',theme:0,w:176,build(B){
  B.ground(0,30,12);B.start(3);
- B.sign(6,'Move with the D-pad. Press JUMP to hop! Grab the green gems.');
+ B.sign(6,'Swipe and hold to move. Press JUMP to hop! Grab the green gems.');
  B.gems(9,13,10);
  B.fill(16,17,10,11,'=');B.gems(16,17,8);
  B.sign(20,'Tap ACTION to shoot your tongue! Slurp up bugs and gems. Hold UP to lick things above you.');
  B.en('b',25);B.gems(26,28,8);
  B.ground(34,65,12);B.fill(38,38,8,8,'?');B.gems(35,37,10);
- B.sign(41,'DOUBLE-TAP ACTION for a NECK RAM! Aim it with the D-pad. Smash the cracked rocks!');
+ B.sign(41,'DOUBLE-TAP ACTION for a NECK RAM! Aim it by swiping. Smash the cracked rocks!');
  B.fill(45,46,0,7,'=');B.fill(45,46,8,11,'C');
  B.gems(48,50,11);B.en('b',53);B.en('e',57,9);B.obj('L',55,9);
  B.flag(60);
  B.sign(63,'Too high? Jump at the ledge and tap ACTION (or hold UP): your neck hooks it and pulls you up!');
  B.ground(66,74,7);B.gems(68,72,5);
  B.ground(75,79,12);
- B.sign(77,'Jump near a golden ring and tap ACTION to swing. Push the D-pad to swing, JUMP to let go!');
+ B.sign(77,'Jump near a golden ring and tap ACTION to swing. Swipe left/right to swing, JUMP to let go!');
  B.hook(83,5);B.gems(82,84,9);
  B.ground(87,118,12);B.plat(91,95,9);B.gems(91,95,8);B.plat(98,102,6);B.gems(98,102,5);B.en('e',97,10);
  B.fill(106,108,11,11,'^');B.en('b',113);B.arc(105,109,8);
@@ -285,9 +283,9 @@ function loadLevel(i){
  if(def.boss){LV.boss={x:22*TS,y:12*TS-30,w:40,h:30,vx:0,vy:0,hp:6,max:6,st:'intro',t:0,face:-1,flash:0,ground:false};LV.goal=null}
  cam.x=camTargetX();
 }
-// landscape: the translucent d-pad / JUMP+ACTION sit over the world, so let the camera show a stone wall past each level edge
+// landscape: the translucent JUMP+ACTION buttons sit over the world, so let the camera show a stone wall past each level edge
 // (the level edge is already solid) to keep the giraffe, spawn and goal clear of the touch controls.
-function camPad(){if(portrait)return[0,0];return[(CTL.dpad.x+CTL.dpad.r*1.15)/S,(W-(CTL.B.x-CTL.B.r*1.15))/S]}
+function camPad(){if(portrait)return[0,0];return[0,(W-(CTL.B.x-CTL.B.r*1.15))/S]}
 function camTargetX(){const pd=camPad(),lo=-pd[0],hi=LV.w*TS-BW+pd[1];if(hi<=lo)return(lo+hi)/2;return clamp(P.x+P.w/2-BW*0.42+P.face*12,lo,hi)}
 function startLevel(i){G.lvl=i;G.hp=3;G.startScore=G.score;loadLevel(i);state='intro';stateT=0;AU.music(false)}
 function newGame(i){G={score:0,lives:3,gems:0,lvl:i,hp:3,startScore:0};startLevel(i)}
@@ -620,11 +618,8 @@ function drawControls(){
  if(portrait){const g=ctx.createLinearGradient(0,gameH,0,H);g.addColorStop(0,'#3a2414');g.addColorStop(1,'#1e120a');ctx.fillStyle=g;ctx.fillRect(0,gameH,W,ctlH);ctx.fillStyle='#f4c060';ctx.fillRect(0,gameH,W,3);
   ctx.fillStyle='rgba(244,192,96,.12)';for(let i=0;i<W;i+=26){ctx.fillRect(i,gameH+8+((i/26)%2)*6,10,4)}}
  const act={};for(const v of TOUCH.values())for(const z in v.z)act[z]=1;Object.assign(act,{L:act.L||IN.L,R:act.R||IN.R,U:act.U||IN.U,D:act.D||IN.D,J:act.J||IN.J,A:act.A||IN.A});
- const d=CTL.dpad,r=d.r,a=r*0.36,al=portrait?1:0.55;ctx.globalAlpha=al;
- ctx.beginPath();ctx.arc(d.x,d.y,r,0,7);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fill();
- rrect(d.x-a,d.y-r*0.92,a*2,r*1.84,6,'#2a2a2e');rrect(d.x-r*0.92,d.y-a,r*1.84,a*2,6,'#2a2a2e');
- const arm=(dx,dy,on)=>{ctx.fillStyle=on?'#f4c060':'#55555c';const cx=d.x+dx*r*0.58,cy=d.y+dy*r*0.58;ctx.beginPath();ctx.moveTo(cx+dx*a*0.6,cy+dy*a*0.6);ctx.lineTo(cx-dy*a*0.55-dx*a*0.3,cy+dx*a*0.55-dy*a*0.3);ctx.lineTo(cx+dy*a*0.55-dx*a*0.3,cy-dx*a*0.55-dy*a*0.3);ctx.fill()};
- arm(1,0,act.R);arm(-1,0,act.L);arm(0,-1,act.U);arm(0,1,act.D);
+ const al=portrait?1:0.55;ctx.globalAlpha=al;
+ if(portrait)txt('SWIPE TO MOVE',W*0.25,gameH+(ctlH-SAFE.b)/2+2,15,'rgba(244,192,96,.6)');
  for(const k of ['A','B']){const c=CTL[k],on=k==='A'?act.J:act.A;ctx.beginPath();ctx.arc(c.x,c.y+3,c.r,0,7);ctx.fillStyle='rgba(0,0,0,.45)';ctx.fill();
   ctx.beginPath();ctx.arc(c.x,c.y+(on?2:0),c.r,0,7);ctx.fillStyle=k==='A'?(on?'#ff7a6a':'#d8392b'):(on?'#7ab0ff':'#2f62c8');ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='rgba(255,255,255,.75)';ctx.stroke();
   txt(c.lbl,c.x,c.y+(on?2:0),c.r*(k==='A'?0.42:0.34),'#fff')}
@@ -634,8 +629,8 @@ function drawIntro(){const L=LEVELS[G.lvl],ga=gameArea();ctx.fillStyle='rgba(20,
  txt(L.boss?'BOSS!':'LEVEL '+(G.lvl+1),W/2,ga*0.36,28,'#f4c060');txt(L.name,W/2,ga*0.36+40,Math.min(34,W/11),'#fff');
  if(L.boss)txt('Wait till he crashes and gets dizzy, then RAM or stomp!',W/2,ga*0.36+80,Math.min(16,W/26),'#ffd0b0');
  else txt('Gems: '+LV.gemTotal+'   Lives: '+G.lives,W/2,ga*0.36+80,16,'#c8ffd0');txt('tap to start',W/2,ga*0.36+112,14,'rgba(255,255,255,.7)')}
-const HOW=[['How to play','D-pad: run left and right. DOWN to duck.','JUMP (red): jump. Hold it to jump higher.','ACTION (blue): shoot your long tongue! Slurp gems, leaves and bugs. Hold UP to lick upward.'],
- ['Giraffe moves','NECK RAM: double-tap ACTION. Aim with the D-pad (even up or down!). Smashes cracked rocks and bad guys.','NECK GRAB: jump at a high ledge and tap ACTION (or hold UP). Your neck hooks it and pulls you up.','SWING: jump near a golden ring and tap ACTION. JUMP to let go.'],
+const HOW=[['How to play','Swipe and hold anywhere: run left and right, DOWN to duck. Let go to stop.','JUMP (red): jump. Hold it to jump higher.','ACTION (blue): shoot your long tongue! Slurp gems, leaves and bugs. Hold UP to lick upward.'],
+ ['Giraffe moves','NECK RAM: double-tap ACTION. Aim by swiping (even up or down!). Smashes cracked rocks and bad guys.','NECK GRAB: jump at a high ledge and tap ACTION (or hold UP). Your neck hooks it and pulls you up.','SWING: jump near a golden ring and tap ACTION. JUMP to let go.'],
  ['The Savanna','Collect green gems: 100 gems = an extra life. Green leaves refill a heart.','Stomp bugs, bees, hyenas and vultures. Porcupines are prickly: RAM them!','Beat 4 levels, then stop Rhino Rumble and win back the gem chest!']];
 function drawTitle(){const t=frame;
  b.setTransform(1,0,0,1,0,0);drawBG(0,t*0.6,LPX-BH);const gy=BH-30;b.fillStyle=THEMES[0].dirt;b.fillRect(0,gy,BW,30);b.fillStyle=THEMES[0].grass;b.fillRect(0,gy,BW,5);
