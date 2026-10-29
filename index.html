@@ -702,4 +702,26 @@ window.__kga={get state(){return state},get btns(){return menuBtns.map(m=>({x:m.
  icon(size){const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');const s=document.createElement('canvas');s.width=s.height=48;const q=s.getContext('2d');
   const gr=q.createLinearGradient(0,0,0,48);gr.addColorStop(0,'#6cc8ff');gr.addColorStop(1,'#ffe8ae');q.fillStyle=gr;q.fillRect(0,0,48,48);q.fillStyle='#5cbf3a';q.fillRect(0,40,48,8);
   gemShape(q,39,12,1.3);drawGiraffe(q,20,41,1,{hx:9,hy:-27,walk:0});g.imageSmoothingEnabled=false;g.drawImage(s,0,0,size,size);return c.toDataURL('image/png')}};
-</script><script src="bonus.js"></script></body></html>
+</script><script src="bonus.js"></script><!-- gamepad:start -->
+<script src="gamepad.js?v=2"></script>
+<script>
+try{HOW.push(['Controller','Xbox, PlayStation or Switch controllers work (USB or Bluetooth, computer or phone).','Stick or D-pad: move. A: JUMP. X or B: ACTION. Y: RAM.','Start: pause. Select: sound. Menus: D-pad + A, B goes back.'])}catch(e){}
+/* gameplay already reads the pad itself (readPad: stick/D-pad move, A jump, X/B action, Start pause);
+   gamepad.js adds: connect/disconnect toast, pad-navigable canvas menus (A select, B back), Select = sound, auto-pause on disconnect */
+GamepadSupport.init({
+ keys:{y:'KeyC',start:function(){},back:function(p){if(p)toggleMute()}},
+ menuKeys:{a:function(p){if(p&&state==='intro')menuKey()}},
+ ignoreSel:'#dock,#mute,#inst,#ios,.tb,#dockHint',
+ menu:function(){return !!document.querySelector('#palbOv.on,#smpLock.on')||state!=='play';},
+ items:GamepadSupport.list(function(){return document.querySelector('#palbOv.on,#smpLock.on')?[]:menuBtns.filter(function(b){return b.label});},{scale:1}),
+ isPaused:function(){return state==='pause'},
+ pause:function(){if(state==='play')pauseGame()},
+ back:function(){if(document.querySelector('#palbOv.on,#smpLock.on'))return false;
+  if(state==='pause'){resumeGame();return true}
+  var b=menuBtns.filter(function(q){return q.fn&&/(BACK|EXIT|CLOSE|DONE|◀)/i.test(q.label||'')})[0];if(b){b.fn();return true}
+  return true;},
+ hint:{text:'🎮 Controller: stick to move · A jump · X action · Start pause',when:function(){return state==='title'&&!document.querySelector('#palbOv.on,#smpLock.on')}}
+});
+</script>
+<!-- gamepad:end -->
+</body></html>
