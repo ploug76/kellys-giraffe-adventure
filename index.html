@@ -319,9 +319,11 @@ function die(){const p=P;p.st='dead';p.vy=-6;p.vx=0;p.dt=0;p.tongue=null;AU.musi
 function afterDeath(){G.lives--;if(G.lives<0){state='over';stateT=0;return}
  G.hp=3;const p=P;Object.assign(p,{x:LV.cp.x,y:LV.cp.y,vx:0,vy:0,st:'n',inv:100,h:24,ram:null,swing:null,ledge:null,tongue:null,airRam:true,dt:0});p.safe={x:LV.cp.x,y:LV.cp.y};for(const e of LV.enemies)if(e.alive&&Math.abs(e.x+e.w/2-(p.x+p.w/2))<96){calmAway(e);if(!EDEF[e.type].spiky&&!EDEF[e.type].fly)e.stun=150}
  if(LV.boss&&LV.boss.hp>0){Object.assign(LV.boss,{x:22*TS,y:12*TS-30,vx:0,vy:0,st:'idle',t:0})}LV.rocks=[];AU.music(true,LEVELS[G.lvl].theme)}
-function fallOut(){const p=P;if(p.st==='dead')return;G.hp--;AU.sfx('splash');burst(p.x+6,Math.min(p.y,LPX-10),'#9be7ff',10,2.5);
- if(G.hp<=0){p.st='dead';p.dt=40;p.vy=0;p.y=LPX+60;AU.music(false);AU.sfx('die');return}
- Object.assign(p,{x:p.safe.x,y:p.safe.y,vx:0,vy:0,st:'n',inv:100,ram:null,swing:null,ledge:null,tongue:null,airRam:true});setH(24)}
+/* respawn fix (Oct 30): blinking pit falls are free; respawn backs up onto solid ground */
+function rfBackA(s,fx){const p=P,w=p.w,gy=s.y+24+2,ok=x=>solidAt(x+1,gy)&&solidAt(x+w-1,gy)&&!rectSolid(x,s.y,w,24),d=Math.sign(fx-s.x)||1;let ex=s.x;for(let i=0;i<80;i++){if(!ok(ex+d*2))break;ex+=d*2}const need=w*2,dist=Math.abs(ex-s.x);if(ok(s.x)&&dist>=need)return s;for(let k=Math.max(0,need-dist);k<TS*24;k+=2){if(ok(s.x-d*k)&&ok(s.x-d*k-d*w))return {x:s.x-d*k,y:s.y}}return s}
+function fallOut(){const p=P;if(p.st==='dead')return;const bl=p.inv>0;if(!bl){G.hp--;AU.sfx('splash');burst(p.x+6,Math.min(p.y,LPX-10),'#9be7ff',10,2.5)}
+ if(!bl&&G.hp<=0){p.st='dead';p.dt=40;p.vy=0;p.y=LPX+60;AU.music(false);AU.sfx('die');return}
+ const s=rfBackA(p.safe,p.x);Object.assign(p,{x:s.x,y:s.y,vx:0,vy:0,st:'n',inv:bl?Math.max(p.inv,60):100,ram:null,swing:null,ledge:null,tongue:null,airRam:true});setH(24)}
 function onAction(){const p=P;if(p.st==='dead'||p.st==='win')return;
  const dt=frame-p.lastAct;p.lastAct=frame;
  if(dt<=16&&(p.st==='n'||p.st==='swing')){p.tongue=null;p.lastAct=-99;startRam();return}
