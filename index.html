@@ -59,13 +59,14 @@ function layoutCtl(){
  if(portrait){
   const cy=gameH+(ctlH-SAFE.b)/2+2;
   const br=clamp(W*0.105,36,46);
-  CTL.A={x:W-SAFE.r-14-br,y:cy-br*0.5,r:br,lbl:'JUMP'};
-  CTL.B={x:W-SAFE.r-14-br*3.3,y:cy+br*0.45,r:br,lbl:'ACTION'};
+  /* Oct 30: JUMP bottom-right, ACTION bottom-left (mirrored) */
+  CTL.A={x:W-SAFE.r-14-br,y:cy,r:br,lbl:'JUMP'};
+  CTL.B={x:SAFE.l+14+br,y:cy,r:br,lbl:'ACTION'};
  }else{
   const br=clamp(H*0.11,34,46);
   const by=H-SAFE.b-br-12;
-  CTL.A={x:W-SAFE.r-16-br,y:by-br*0.8,r:br,lbl:'JUMP'};
-  CTL.B={x:W-SAFE.r-16-br*3.3,y:by,r:br,lbl:'ACTION'};
+  CTL.A={x:W-SAFE.r-16-br,y:by,r:br,lbl:'JUMP'};
+  CTL.B={x:SAFE.l+16+br,y:by,r:br,lbl:'ACTION'};
  }
 }
 const KEY={},TOUCH=new Map();let PAD={};
@@ -77,11 +78,11 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowleft','arro
  if(k==='enter')menuKey()});
 addEventListener('keyup',e=>{KEY[e.key.toLowerCase()]=0});
 addEventListener('blur',()=>{for(const k in KEY)KEY[k]=0;TOUCH.clear()});
-// touch: JUMP/ACTION on the right; everywhere else is swipe-to-move.
+// touch: JUMP bottom-right, ACTION bottom-left; everywhere else is swipe-to-move.
 // Swipe and hold: the giraffe moves in the swipe direction while the finger stays down, stops on release.
 function zoneAt(x,y){const out={};
  const A=CTL.A,B=CTL.B,da=Math.hypot(x-A.x,y-A.y),db=Math.hypot(x-B.x,y-B.y);
- if(portrait?(x>=W*0.5&&y>gameH-6):(Math.min(da,db)<A.r*1.7)){if(da<db)out.J=1;else out.A=1}
+ if(portrait?(y>gameH-6&&(x>=W*0.5||db<B.r*1.7)):(Math.min(da,db)<A.r*1.7)){if(da<db)out.J=1;else out.A=1}
  return out}
 const SWIPE_MIN=14;
 function swipeDir(dx,dy){const out={};if(Math.hypot(dx,dy)<SWIPE_MIN)return out;const a=Math.atan2(dy,dx),s=Math.round(a/(Math.PI/4));
