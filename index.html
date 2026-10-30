@@ -560,15 +560,18 @@ function drawPlayer(){const p=P;if(p.inv>0&&p.st!=='dead'&&(p.inv>>2)%2)return;
  if(p.st==='ram'){b.fillStyle='rgba(255,246,200,.8)';const hx=x+p.face*hd[0],hy=bt+hd[1];b.fillRect(hx-6,hy-6,12,2);b.fillRect(hx-6,hy+3,12,2)}}
 function drawEnemy(e){const x=Math.round(e.x-(e.raw?0:cam.x)),y=Math.round(e.y-(e.raw?0:cam.y)),f=e.face||1,w=e.w,h=e.h;
  const R=(ox,oy,ww,hh,c)=>{b.fillStyle=c;b.fillRect(f>0?x+ox:x+w-ox-ww,y+oy,ww,hh)};const t=e.t||0,st=e.stun>0;
- if(e.type==='b'){R(1,2,10,6,'#5b2a86');R(2,2,4,2,'#9a6ad0');R(9,3,3,4,'#1d0f2a');R(10,4,1,1,'#fff');const l=(t>>3)%2;R(2,8,1,1,'#1d0f2a');R(5+l,8,1,1,'#1d0f2a');R(8,8,1,1,'#1d0f2a');R(6,1,1,7,'#3a1a5a')}
+ /* leg check: walkers step by distance moved, amp eases to standing */
+ {const d=Math.abs(e.x-(e._lx===undefined?e.x:e._lx));e._lx=e.x;const mv=d>0.05&&d<12&&!st&&!e.raw;e._wd=(e._wd||0)+(mv?d:0);e._ga=(e._ga||0)+((mv?1:0)-(e._ga||0))*0.18;if(!mv&&e._ga<0.03)e._ga=0}
+ const GQ=i=>e._wd*0.42+(i%2?Math.PI:0),GS=(i,k)=>Math.round(Math.sin(GQ(i))*k*e._ga),GL=i=>e._ga>0.35&&Math.cos(GQ(i))>0.35?1:0;
+ if(e.type==='b'){R(1,2,10,6,'#5b2a86');R(2,2,4,2,'#9a6ad0');R(9,3,3,4,'#1d0f2a');R(10,4,1,1,'#fff');[2,5,8].forEach((fx,i)=>R(fx+GS(i,1.4),8-GL(i),1,1,'#1d0f2a'));R(6,1,1,7,'#3a1a5a')}
  else if(e.type==='e'){const wg=(t>>2)%2;R(1,3,10,6,'#ffd23a');R(3,3,2,6,'#222');R(7,3,2,6,'#222');R(10,4,2,3,'#222');R(11,4,1,1,'#fff');b.fillStyle='rgba(255,255,255,.8)';R(3,wg?-1:0,5,3,'rgba(230,250,255,.85)');R(0,6,1,1,'#222')}
  else if(e.type==='y'){const l=(t>>3)%2;R(2,3,13,7,'#b59a6a');R(4,4,2,2,'#5a4430');R(9,5,2,2,'#5a4430');R(6,7,2,2,'#5a4430');R(0,3,3,2,'#5a4430');R(14,0,6,6,'#b59a6a');R(15,-2,2,3,'#5a4430');R(18,3,2,2,'#2a2018');R(16,1,1,1,st?'#fff':'#ff3');R(16,5,4,1,'#fff');
-  R(3,10,2,4-l,'#8a7450');R(6,10,2,3+l,'#8a7450');R(11,10,2,4-l,'#8a7450');R(14,10,2,3+l,'#8a7450')}
+  [3,6,11,14].forEach((lx,j)=>{const i=j===0||j===3?0:1,sw=GS(i,1.6),lf=GL(i);R(lx,10,2,2,'#8a7450');R(lx+sw,12-lf,2,2,'#8a7450')})}
  else if(e.type==='p'){R(1,5,14,7,'#6b4a2a');R(12,7,4,4,'#a07850');R(14,8,1,1,'#000');for(let i=0;i<6;i++){R(1+i*2,1+(i%2),1,5,'#f4ead0');R(2+i*2,2+(i%2),1,4,'#2a1a0a')}}
  else if(e.type==='v'){const wg=(t>>3)%2;R(3,3,10,6,'#3a2a22');R(12,1,4,4,'#e98a9a');R(15,3,2,1,'#e8c84a');R(13,2,1,1,'#000');R(4,2,10,2,'#fff6e8');R(0,wg?-2:6,7,3,'#2a1a14');R(8,wg?-2:6,6,3,'#2a1a14')}
  if(st){b.fillStyle='#fff36a';const a=frame*0.15;for(let i=0;i<3;i++){b.fillRect(Math.round(x+w/2+Math.cos(a+i*2.1)*7),Math.round(y-4+Math.sin(a+i*2.1)*2),2,2)}}}
 function drawBoss(B){const x=Math.round(B.x-cam.x),y=Math.round(B.y-cam.y),f=B.face;if(B.flash&&(B.flash>>2)%2)return;
- const R=(ox,oy,w,h,c)=>{b.fillStyle=c;b.fillRect(f>0?x+ox:x+40-ox-w,y+oy,w,h)};const l=(B.st==='charge')?(B.t>>2)%2:0,hurt=B.st==='hurt'||B.st==='stun';
+ const R=(ox,oy,w,h,c)=>{b.fillStyle=c;b.fillRect(f>0?x+ox:x+40-ox-w,y+oy,w,h)};const bd=Math.abs(B.x-(B._lx===undefined?B.x:B._lx));B._lx=B.x;if(bd>0.05&&bd<20)B._wd=(B._wd||0)+bd;const l=bd>0.05&&bd<20?Math.floor((B._wd||0)/7)%2:0,hurt=B.st==='hurt'||B.st==='stun';
  R(2,6,30,16,'#8d8a92');R(4,6,26,3,'#a9a6ae');R(26,4,12,14,'#8d8a92');R(36,8,4,8,'#7b7880');R(37,0,3,9,'#efe6cf');R(34,3,2,5,'#efe6cf');R(29,7,3,3,'#fff');R(30+(hurt?0:1),8,1,1,hurt?'#c00':'#000');R(27,2,3,4,'#7b7880');
  R(28,5,6,1,'#3a3840');R(0,8,3,2,'#7b7880');
  R(4,22,5,8-l*2,'#7b7880');R(11,22,5,6+l*2,'#7b7880');R(21,22,5,8-l*2,'#7b7880');R(28,22,5,6+l*2,'#7b7880');
