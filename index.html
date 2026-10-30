@@ -395,7 +395,7 @@ function normal(){const p=P,dir=IN.R-IN.L;
  const hy=moveY(p,p.vy);
  if(hy.length&&p.vy>0){if(!p.ground&&p.vy>3)burst(p.x+6,p.y+p.h,'#d9b98a',3,1);p.vy=0;p.ground=true;p.airRam=true}
  else{p.ground=false;if(hy.length&&p.vy<0){for(const [cx,cy] of hy)bonkQ(cx,cy);p.vy=0.5}}
- if(p.ground&&Math.abs(p.vx)>0.1)p.walk+=Math.abs(p.vx)*0.18;
+ if(p.ground&&Math.abs(p.vx)>0.1)p.walk+=Math.abs(p.vx)*0.0655;/* cadence (arm check, Oct 30 2026): ~2.75 steps/s at full run (was ~7.6) */
  if(!p.ground&&IN.U&&p.vy>-2.5&&!p.tongue)tryLedge();
 }
 function doRam(){const p=P,r=p.ram;r.t--;const sp=r.t>5?5.2:2+r.t*0.6;
@@ -562,7 +562,7 @@ function drawEnemy(e){const x=Math.round(e.x-(e.raw?0:cam.x)),y=Math.round(e.y-(
  const R=(ox,oy,ww,hh,c)=>{b.fillStyle=c;b.fillRect(f>0?x+ox:x+w-ox-ww,y+oy,ww,hh)};const t=e.t||0,st=e.stun>0;
  /* leg check: walkers step by distance moved, amp eases to standing */
  {const d=Math.abs(e.x-(e._lx===undefined?e.x:e._lx));e._lx=e.x;const mv=d>0.05&&d<12&&!st&&!e.raw;e._wd=(e._wd||0)+(mv?d:0);e._ga=(e._ga||0)+((mv?1:0)-(e._ga||0))*0.18;if(!mv&&e._ga<0.03)e._ga=0}
- const GQ=i=>e._wd*0.42+(i%2?Math.PI:0),GS=(i,k)=>Math.round(Math.sin(GQ(i))*k*e._ga),GL=i=>e._ga>0.35&&Math.cos(GQ(i))>0.35?1:0;
+ const GQ=i=>e._wd*({b:.35,y:.152,p:.305}[e.type]||.3)+(i%2?Math.PI:0),GS=(i,k)=>Math.round(Math.sin(GQ(i))*k*e._ga),GL=i=>e._ga>0.35&&Math.cos(GQ(i))>0.35?1:0;
  if(e.type==='b'){R(1,2,10,6,'#5b2a86');R(2,2,4,2,'#9a6ad0');R(9,3,3,4,'#1d0f2a');R(10,4,1,1,'#fff');[2,5,8].forEach((fx,i)=>R(fx+GS(i,1.4),8-GL(i),1,1,'#1d0f2a'));R(6,1,1,7,'#3a1a5a')}
  else if(e.type==='e'){const wg=(t>>2)%2;R(1,3,10,6,'#ffd23a');R(3,3,2,6,'#222');R(7,3,2,6,'#222');R(10,4,2,3,'#222');R(11,4,1,1,'#fff');b.fillStyle='rgba(255,255,255,.8)';R(3,wg?-1:0,5,3,'rgba(230,250,255,.85)');R(0,6,1,1,'#222')}
  else if(e.type==='y'){const l=(t>>3)%2;R(2,3,13,7,'#b59a6a');R(4,4,2,2,'#5a4430');R(9,5,2,2,'#5a4430');R(6,7,2,2,'#5a4430');R(0,3,3,2,'#5a4430');R(14,0,6,6,'#b59a6a');R(15,-2,2,3,'#5a4430');R(18,3,2,2,'#2a2018');R(16,1,1,1,st?'#fff':'#ff3');R(16,5,4,1,'#fff');
@@ -643,7 +643,7 @@ const HOW=[['How to play','Swipe and hold anywhere: run left and right, DOWN to 
 function drawTitle(){const t=frame;
  b.setTransform(1,0,0,1,0,0);drawBG(0,t*0.6,LPX-BH);const gy=BH-30;b.fillStyle=THEMES[0].dirt;b.fillRect(0,gy,BW,30);b.fillStyle=THEMES[0].grass;b.fillRect(0,gy,BW,5);
  for(let i=0;i<6;i++){const x=((i*53-t*0.6)%(BW+40)+BW+40)%(BW+40)-20;gemShape(b,x,gy-28-Math.sin(t*0.05+i)*4,1)}
- drawGiraffe(b,Math.round(BW*0.3),gy,1,{walk:t*0.18,hx:7,hy:-22});
+ drawGiraffe(b,Math.round(BW*0.3),gy,1,{walk:t*0.092,hx:7,hy:-22});
  ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(buf,0,0,BW,BH,0,0,Math.round(BW*S*DPR),Math.round(BH*S*DPR));ctx.setTransform(DPR,0,0,DPR,0,0);
  if(BH*S<H){ctx.fillStyle=THEMES[0].dirt;ctx.fillRect(0,BH*S-1,W,H)}
  if(title.cover)return;
