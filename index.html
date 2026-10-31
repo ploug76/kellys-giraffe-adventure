@@ -57,16 +57,14 @@ function layoutCtl(){
  const top=SAFE.t+8,rgt=W-SAFE.r-8;
  CTL.pause={x:rgt-46,y:top,w:46,h:46};CTL.mute={x:rgt-100,y:top,w:46,h:46};
  if(portrait){
-  const cy=gameH+(ctlH-SAFE.b)/2+2;
-  const br=clamp(W*0.105,36,46);
-  /* Oct 30: JUMP bottom-right, ACTION bottom-left (mirrored) */
-  CTL.A={x:W-SAFE.r-14-br,y:cy,r:br,lbl:'JUMP'};
-  CTL.B={x:SAFE.l+14+br,y:cy,r:br,lbl:'ACTION'};
+  /* Peter Oct 30 9:40 PM: cluster like his screenshot - JUMP big orange far bottom-right, ACTION smaller green up-left of it */
+  const ph=H-gameH-SAFE.b,big=Math.round(clamp(ph*0.36,92,124)),sm=Math.round(big*0.84),bot=Math.round(clamp(ph*0.14,18,46))+SAFE.b,ra=big/2,rb=sm/2;
+  CTL.A={x:W-SAFE.r-16-ra,y:H-bot-ra,r:ra,lbl:'JUMP'};
+  CTL.B={x:W-SAFE.r-16-big-14-rb,y:Math.max(gameH+10+rb,H-bot-big*0.42-rb),r:rb,lbl:'ACTION'};
  }else{
-  const br=clamp(H*0.11,34,46);
-  const by=H-SAFE.b-br-12;
-  CTL.A={x:W-SAFE.r-16-br,y:by,r:br,lbl:'JUMP'};
-  CTL.B={x:SAFE.l+16+br,y:by,r:br,lbl:'ACTION'};
+  const big=Math.round(clamp(H*0.21,72,96)),sm=Math.round(big*0.82),ra=big/2,rb=sm/2;
+  CTL.A={x:W-SAFE.r-14-ra,y:H-SAFE.b-12-ra,r:ra,lbl:'JUMP'};
+  CTL.B={x:W-SAFE.r-14-big-10-rb,y:H-SAFE.b-12-big*0.18-rb,r:rb,lbl:'ACTION'};
  }
 }
 const KEY={},TOUCH=new Map();let PAD={};
@@ -82,7 +80,7 @@ addEventListener('blur',()=>{for(const k in KEY)KEY[k]=0;TOUCH.clear()});
 // Swipe and hold: the giraffe moves in the swipe direction while the finger stays down, stops on release.
 function zoneAt(x,y){const out={};
  const A=CTL.A,B=CTL.B,da=Math.hypot(x-A.x,y-A.y),db=Math.hypot(x-B.x,y-B.y);
- if(portrait?(y>gameH-6&&(x>=W*0.5||db<B.r*1.7)):(Math.min(da,db)<A.r*1.7)){if(da<db)out.J=1;else out.A=1}
+ if(portrait?(y>gameH-6&&(da<A.r*1.6||db<B.r*1.6)):(Math.min(da,db)<A.r*1.7)){if(da<db)out.J=1;else out.A=1}
  return out}
 const SWIPE_MIN=14;
 function swipeDir(dx,dy){const out={};if(Math.hypot(dx,dy)<SWIPE_MIN)return out;const a=Math.atan2(dy,dx),s=Math.round(a/(Math.PI/4));
@@ -632,9 +630,9 @@ function drawControls(){
  const al=portrait?1:0.55;ctx.globalAlpha=al;
  if(portrait)txt('SWIPE TO MOVE',W*0.25,gameH+(ctlH-SAFE.b)/2+2,15,'rgba(244,192,96,.6)');
  for(const k of ['A','B']){const c=CTL[k],on=k==='A'?act.J:act.A;ctx.beginPath();ctx.arc(c.x,c.y+3,c.r,0,7);ctx.fillStyle='rgba(0,0,0,.45)';ctx.fill();
-  ctx.beginPath();ctx.arc(c.x,c.y+(on?2:0),c.r,0,7);ctx.fillStyle=k==='A'?(on?'#ff7a6a':'#d8392b'):(on?'#7ab0ff':'#2f62c8');ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='rgba(255,255,255,.75)';ctx.stroke();
-  txt(c.lbl,c.x,c.y+(on?2:0),c.r*(k==='A'?0.42:0.34),'#fff')}
- if(portrait)txt('double-tap = NECK RAM',CTL.B.x,Math.min(H-SAFE.b-8,CTL.B.y+CTL.B.r+14),14,'#f4c060');
+  ctx.beginPath();ctx.arc(c.x,c.y+(on?2:0),c.r,0,7);{const _g=ctx.createRadialGradient(c.x-c.r*.3,c.y-c.r*.4,c.r*.1,c.x,c.y,c.r);if(k==='A'){_g.addColorStop(0,'#ffe0b0');_g.addColorStop(.55,'#ff8a1a');_g.addColorStop(1,'#a03a00')}else{_g.addColorStop(0,'#d8ffd0');_g.addColorStop(.55,'#38b040');_g.addColorStop(1,'#0a5a12')}ctx.fillStyle=_g};ctx.fill();if(on){ctx.fillStyle='rgba(255,255,255,.25)';ctx.fill()}ctx.lineWidth=3;ctx.strokeStyle='#fff';ctx.stroke();
+  ctx.font='900 '+(Math.round(c.r*(k==='A'?0.56:0.4)))+'px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=Math.max(3,(Math.round(c.r*(k==='A'?0.56:0.4)))*0.22);ctx.strokeStyle='#000';ctx.strokeText(c.lbl,c.x,c.y+(on?2:0));ctx.fillStyle='#fff';ctx.fillText(c.lbl,c.x,c.y+(on?2:0))}
+ if(portrait)txt('double-tap = NECK RAM',W*0.25,gameH+(ctlH-SAFE.b)/2+26,13,'#f4c060');
  ctx.globalAlpha=1}
 function drawIntro(){const L=LEVELS[G.lvl],ga=gameArea();ctx.fillStyle='rgba(20,10,5,.55)';ctx.fillRect(0,0,W,ga);
  txt(L.boss?'BOSS!':'LEVEL '+(G.lvl+1),W/2,ga*0.36,28,'#f4c060');txt(L.name,W/2,ga*0.36+40,Math.min(34,W/11),'#fff');
