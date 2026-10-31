@@ -58,7 +58,7 @@ function layoutCtl(){
  CTL.pause={x:rgt-46,y:top,w:46,h:46};CTL.mute={x:rgt-100,y:top,w:46,h:46};
  if(portrait){
   /* Peter Oct 30 9:40 PM: cluster like his screenshot - JUMP big orange far bottom-right, ACTION smaller green up-left of it */
-  const ph=H-gameH-SAFE.b,big=Math.round(clamp(ph*0.36,92,124)),sm=Math.round(big*0.84),bot=Math.round(clamp(ph*0.14,18,46))+SAFE.b,ra=big/2,rb=sm/2;
+  const ph=H-gameH-SAFE.b,big=Math.round(clamp(Math.max(ph*0.36,W*0.26),92,124)),sm=Math.round(big*0.84),bot=Math.round(clamp(ph*0.14,18,46))+SAFE.b,ra=big/2,rb=sm/2;
   CTL.A={x:W-SAFE.r-16-ra,y:H-bot-ra,r:ra,lbl:'JUMP'};
   CTL.B={x:W-SAFE.r-16-big-14-rb,y:Math.max(gameH+10+rb,H-bot-big*0.42-rb),r:rb,lbl:'ACTION'};
  }else{
