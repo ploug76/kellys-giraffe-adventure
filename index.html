@@ -57,14 +57,14 @@ function layoutCtl(){
  const top=SAFE.t+8,rgt=W-SAFE.r-8;
  CTL.pause={x:rgt-46,y:top,w:46,h:46};CTL.mute={x:rgt-100,y:top,w:46,h:46};
  if(portrait){
-  /* Peter Oct 30 9:40 PM: cluster like his screenshot - JUMP big orange far bottom-right, ACTION smaller green up-left of it */
-  const ph=H-gameH-SAFE.b,big=Math.round(clamp(Math.max(ph*0.36,W*0.26),92,124)),sm=Math.round(big*0.84),bot=Math.round(clamp(ph*0.14,18,46))+SAFE.b,ra=big/2,rb=sm/2;
-  CTL.A={x:W-SAFE.r-16-ra,y:H-bot-ra,r:ra,lbl:'JUMP'};
-  CTL.B={x:W-SAFE.r-16-big-14-rb,y:Math.max(gameH+10+rb,H-bot-big*0.42-rb),r:rb,lbl:'ACTION'};
+  /* Peter Oct 31 9:10 PM: NES pad - ACTION (green) and JUMP (orange) side by side, level, both the old ACTION size */
+  const ph=H-gameH-SAFE.b,big=Math.round(clamp(Math.max(ph*0.36,W*0.26),92,124)),sm=Math.round(big*0.84),bot=Math.round(clamp(ph*0.14,18,46))+SAFE.b,r=sm/2,cy=H-bot-r;
+  CTL.A={x:W-SAFE.r-16-r,y:cy,r:r,lbl:'JUMP'};
+  CTL.B={x:W-SAFE.r-16-sm-18-r,y:cy,r:r,lbl:'ACTION'};
  }else{
-  const big=Math.round(clamp(H*0.21,72,96)),sm=Math.round(big*0.82),ra=big/2,rb=sm/2;
-  CTL.A={x:W-SAFE.r-14-ra,y:H-SAFE.b-12-ra,r:ra,lbl:'JUMP'};
-  CTL.B={x:W-SAFE.r-14-big-10-rb,y:H-SAFE.b-12-big*0.18-rb,r:rb,lbl:'ACTION'};
+  const big=Math.round(clamp(H*0.21,72,96)),sm=Math.round(big*0.82),r=sm/2,cy=H-SAFE.b-12-r;
+  CTL.A={x:W-SAFE.r-14-r,y:cy,r:r,lbl:'JUMP'};
+  CTL.B={x:W-SAFE.r-14-sm-16-r,y:cy,r:r,lbl:'ACTION'};
  }
 }
 const KEY={},TOUCH=new Map();let PAD={};
