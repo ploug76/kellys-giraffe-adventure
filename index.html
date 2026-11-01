@@ -327,17 +327,19 @@ function onAction(){const p=P;if(p.st==='dead'||p.st==='win')return;
  const dt=frame-p.lastAct;p.lastAct=frame;
  if(dt<=16&&(p.st==='n'||p.st==='swing')){p.tongue=null;p.lastAct=-99;startRam();return}
  if(p.st!=='n')return;
- if(!p.ground){if(tryHook())return;if(tryLedge())return}
+ if(tryHook())return;/* Peter Oct 31 11:11 PM: ACTION near a ring grabs it on the ground or in the air */
+ if(!p.ground){if(tryLedge())return}
  startTongue()}
 function startRam(){const p=P;if(p.ramCD>0||p.st==='dead'||p.st==='ledge')return;if(!p.ground&&!p.airRam&&p.st!=='swing')return;
  let dx=IN.R-IN.L,dy=IN.D-IN.U;if(p.ground&&dy>0)dy=0;if(!dx&&!dy)dx=p.face;const m=Math.hypot(dx,dy);dx/=m;dy/=m;if(dx)p.face=Math.sign(dx);
  p.swing=null;p.tongue=null;setH(24);p.duck=false;p.st='ram';p.ram={dx,dy,t:18};if(!p.ground)p.airRam=false;AU.sfx('ram')}
-function tryHook(){const p=P,hx=p.x+p.w/2,hy=p.y+4;let best=null,bd=66;
- for(const h of LV.hooks){if(h.y>hy+10)continue;const d=Math.hypot(h.x-hx,h.y-hy);if(d<bd){bd=d;best=h}}
+/* easy ring grab: any direction, measured from the head OR the body, ~1.7x the old reach, no aiming */
+function tryHook(){const p=P,hx=p.x+p.w/2,hy=p.y+4,by=p.y+p.h/2;let best=null,bd=112;
+ for(const h of LV.hooks){if(h===p.relH&&frame-p.relF<30)continue;const d=Math.min(Math.hypot(h.x-hx,h.y-hy),Math.hypot(h.x-hx,h.y-by));if(d<bd){bd=d;best=h}}
  if(!best)return false;
  const cx=p.x+p.w/2,cy=p.y+p.h/2;let dx=cx-best.x,dy=Math.max(6,cy-best.y);const L=clamp(Math.hypot(dx,dy),30,52);
  const th=Math.atan2(dx,dy),om=(p.vx*Math.cos(th)-p.vy*Math.sin(th))/L;
- p.st='swing';p.swing={h:best,L,th,om:clamp(om,-0.12,0.12),t:0};p.tongue=null;p.airRam=true;p.duck=false;setH(24);AU.sfx('grab');return true}
+ p.st='swing';p.swing={h:best,L,th:clamp(th,-1.5,1.5),om:clamp(om,-0.12,0.12),t:0,fx:p.x,fy:p.y};p.ram=null;p.ledge=null;p.tongue=null;p.airRam=true;p.duck=false;setH(24);AU.sfx('grab');return true}
 function tryLedge(){const p=P;if(p.st!=='n'||p.ground)return false;const f=p.face;
  const cx=f>0?Math.floor((p.x+p.w+3)/TS):Math.floor((p.x-3)/TS);
  for(let cy=Math.floor((p.y-40)/TS);cy<=Math.floor((p.y+p.h-6)/TS);cy++){
@@ -415,11 +417,12 @@ function doSwing(){const p=P,s=p.swing;s.t++;
  s.om+=-(0.38/s.L)*Math.sin(s.th)+(IN.R-IN.L)*0.003;s.om*=0.995;s.om=clamp(s.om,-0.17,0.17);
  const nth=clamp(s.th+s.om,-1.5,1.5);if(nth===1.5||nth===-1.5)s.om*=-0.3;
  const cx=s.h.x+Math.sin(nth)*s.L,cy=s.h.y+Math.cos(nth)*s.L,nx=cx-p.w/2,ny=cy-p.h/2;
- if(rectSolid(nx,ny,p.w,p.h))s.om*=-0.4;else{s.th=nth;p.x=nx;p.y=ny}
+ if(s.fx!==undefined&&s.t<=10){s.th=nth;const k=s.t/10,e=1-Math.pow(1-k,3);p.x=s.fx+(nx-s.fx)*e;p.y=s.fy+(ny-s.fy)*e}/* smooth neck tween onto the ring */
+ else if(rectSolid(nx,ny,p.w,p.h))s.om*=-0.4;else{s.th=nth;p.x=nx;p.y=ny}
  if(IN.R-IN.L)p.face=IN.R-IN.L;
- if(PR.J&&s.t>4){const v=s.om*s.L;p.vx=clamp(v*Math.cos(s.th)*1.15,-4.2,4.2);p.vy=clamp(-v*Math.sin(s.th),-5,3)-3.4;p.st='n';p.swing=null;p.airRam=true;p.ground=false;p.coyote=0;p.jbuf=0;
+ if(PR.J&&s.t>4){const v=s.om*s.L;p.vx=clamp(v*Math.cos(s.th)*1.15,-4.2,4.2);p.vy=clamp(-v*Math.sin(s.th),-5,3)-3.4;p.st='n';p.relH=s.h;p.relF=frame;p.swing=null;p.airRam=true;p.ground=false;p.coyote=0;p.jbuf=0;
   if(Math.abs(p.vx)>0.3)p.face=Math.sign(p.vx);AU.sfx('jump')}
- else if(PR.D){p.st='n';p.swing=null;p.vx*=0.3;p.vy=0}}
+ else if(PR.D){p.st='n';p.relH=s.h;p.relF=frame;p.swing=null;p.vx*=0.3;p.vy=0}}
 
 // ===== enemies =====
 function killEnemy(e,how){e.alive=false;const d=EDEF[e.type];addScore(d.pts,e.x+e.w/2,e.y,'+'+d.pts);AU.sfx(how==='ram'?'break':'stomp');burst(e.x+e.w/2,e.y+e.h/2,'#fff',8,2.2);
